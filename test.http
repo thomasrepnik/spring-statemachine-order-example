@@ -1,0 +1,14 @@
+GET http://localhost:8080/order/success
+
+###
+
+GET http://localhost:8080/order/fail
+
+###
+
+GET http://localhost:8080/retry/fail/1c720907-085a-4f81-96f4-07c23458b0e8
+
+
+###
+
+GET http://localhost:8080/retry/success/9a63a8ba-0e11-4cbe-aef3-621e7ebe3cda
