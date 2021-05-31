@@ -26,14 +26,16 @@ public class OrderController {
     @PostMapping(path = "/order/success")
     public ResponseEntity<String> createSuccessfulOrder(@RequestBody Order order){
         String uuid = UUID.randomUUID().toString();
-        getMachine(uuid, order, Boolean.FALSE);
+        final StateMachine<States, Events> machine = getMachine(uuid, order, Boolean.FALSE);
+        machine.startReactively().block();
         return ResponseEntity.ok(uuid);
     }
 
     @PostMapping(path = "/order/fail")
     public ResponseEntity<String> createFailingOrder(@RequestBody Order order){
         String uuid = UUID.randomUUID().toString();
-        getMachine(uuid, order, Boolean.TRUE);
+        final StateMachine<States, Events> machine = getMachine(uuid, order, Boolean.TRUE);
+        machine.startReactively().block();
         return ResponseEntity.ok(uuid);
     }
 
@@ -74,16 +76,20 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
+    
+    
     private synchronized StateMachine<States, Events> getMachine(String id, Order order, Boolean fail) {
         System.out.println("reading machine with id " + id);
+        stateMachineService.releaseStateMachine(id);
         StateMachine<States, Events> stateMachine = stateMachineService.acquireStateMachine(id);
         stateMachine.getExtendedState().getVariables().put("fail", fail);
         if (order != null){
             stateMachine.getExtendedState().getVariables().put("order", order);
         }
-        stateMachine.startReactively().block();
+
         return stateMachine;
     }
+
 
 
 

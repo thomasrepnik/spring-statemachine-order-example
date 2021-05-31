@@ -16,16 +16,25 @@ Content-Type: application/json
 ###
 
 POST http://localhost:8080/order/fail
+Content-Type: application/json
+
+{
+	"customer": "ABC Racing",
+	"articleNumber": 2421,
+	"count": 1
+}
 
 ###
 
-GET http://localhost:8080/retry/fail/1c720907-085a-4f81-96f4-07c23458b0e8
+GET http://localhost:8080/retry/fail/14b89161-c261-4ac1-b787-1465d7232f8d
 
 
 ###
 
-GET http://localhost:8080/retry/success/9a63a8ba-0e11-4cbe-aef3-621e7ebe3cda
+GET http://localhost:8080/retry/success/14b89161-c261-4ac1-b787-1465d7232f8d
 
 ###
+GET http://localhost:8080/order/14b89161-c261-4ac1-b787-1465d7232f8d
 
-GET http://localhost:8080/order/ad89e0f9-5acb-45a6-a992-400ea246513f
+###
+# for ((i=1;i<=2000;i++)); do curl -s -X POST --location "http://localhost:8080/order/success" -H "Content-Type: application/json" -d "{\"customer\": \"ABC Racing\", \"articleNumber\": 2421, \"count\": 1}" > /dev/null; done

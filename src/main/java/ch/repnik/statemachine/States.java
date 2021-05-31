@@ -8,7 +8,7 @@ import lombok.Getter;
 public enum States {
     CREATED,
     PACKED,
-    SHIPPED,
     DELIVERED,
-    CANCELLED,
+    RETRY,
+    FAILED
 }

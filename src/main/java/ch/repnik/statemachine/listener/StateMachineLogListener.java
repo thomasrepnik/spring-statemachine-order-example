@@ -33,5 +33,6 @@ public class StateMachineLogListener extends StateMachineListenerAdapter<States,
 		} else if (stateContext.getStage() == Stage.STATE_EXIT) {
 			System.out.println(stateContext.getStateMachine().getId() + " exit " + stateContext.getSource().getId());
 		}
+
 	}
 }
