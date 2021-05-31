@@ -10,9 +10,7 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.service.StateMachineService;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import javax.websocket.server.PathParam;
@@ -25,23 +23,23 @@ public class OrderController {
     private StateMachineService<States, Events> stateMachineService;
 
 
-    @GetMapping(path = "/order/success")
-    public ResponseEntity<String> createSuccessfulOrder(){
+    @PostMapping(path = "/order/success")
+    public ResponseEntity<String> createSuccessfulOrder(@RequestBody Order order){
         String uuid = UUID.randomUUID().toString();
-        getMachine(uuid, Boolean.FALSE);
+        getMachine(uuid, order, Boolean.FALSE);
         return ResponseEntity.ok(uuid);
     }
 
-    @GetMapping(path = "/order/fail")
-    public ResponseEntity<String> createFailingOrder(){
+    @PostMapping(path = "/order/fail")
+    public ResponseEntity<String> createFailingOrder(@RequestBody Order order){
         String uuid = UUID.randomUUID().toString();
-        getMachine(uuid, Boolean.TRUE);
+        getMachine(uuid, order, Boolean.TRUE);
         return ResponseEntity.ok(uuid);
     }
 
     @GetMapping(path = "/retry/success/{id}")
     public ResponseEntity<String> retryFailingOrderSuccess(@PathVariable String id){
-        StateMachine<States, Events> machine = getMachine(id, Boolean.FALSE);
+        StateMachine<States, Events> machine = getMachine(id, null, Boolean.FALSE);
 
         //Lese letzte Transition aus dem Context
         Transition<States, Events> lastTransition = machine.getTransitions().stream().skip(machine.getTransitions().size() - 1).findFirst().get();
@@ -54,7 +52,7 @@ public class OrderController {
 
     @GetMapping(path = "/retry/fail/{id}")
     public ResponseEntity<String> retryFailingOrderFail(@PathVariable String id){
-        StateMachine<States, Events> machine = getMachine(id, Boolean.TRUE);
+        StateMachine<States, Events> machine = getMachine(id, null, Boolean.TRUE);
 
         //Lese letzte Transition aus dem Context
         Transition<States, Events> lastTransition = machine.getTransitions().stream().skip(machine.getTransitions().size() - 1).findFirst().get();
@@ -65,11 +63,25 @@ public class OrderController {
         return ResponseEntity.ok(id);
     }
 
-    private synchronized StateMachine<States, Events> getMachine(String id, Boolean fail) {
+    @GetMapping(path = "/order/{id}")
+    public ResponseEntity<Order> readOrder(@PathVariable String id){
+        StateMachine<States, Events> machine = getMachine(id, null, Boolean.TRUE);
+
+        //Lese letzte Transition aus dem Context
+        Order order = machine.getExtendedState().get("order", Order.class);
+
+
+        return ResponseEntity.ok(order);
+    }
+
+    private synchronized StateMachine<States, Events> getMachine(String id, Order order, Boolean fail) {
         System.out.println("reading machine with id " + id);
         StateMachine<States, Events> stateMachine = stateMachineService.acquireStateMachine(id);
         stateMachine.getExtendedState().getVariables().put("fail", fail);
-        stateMachine.startReactively().subscribe();
+        if (order != null){
+            stateMachine.getExtendedState().getVariables().put("order", order);
+        }
+        stateMachine.startReactively().block();
         return stateMachine;
     }
 

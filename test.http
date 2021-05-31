@@ -1,8 +1,21 @@
-GET http://localhost:8080/order/success
+# Was noch nicht funkitoniert: Anlegen (mit success) und danach den State direkt wieder auslesen
+# Vermutung: Wahrscheinlich muss die Statemachine released werden!!
 
 ###
 
-GET http://localhost:8080/order/fail
+
+POST http://localhost:8080/order/success
+Content-Type: application/json
+
+{
+  "customer": "ABC Racing",
+  "articleNumber": 2421,
+  "count": 1
+}
+
+###
+
+POST http://localhost:8080/order/fail
 
 ###
 
@@ -12,3 +25,7 @@ GET http://localhost:8080/retry/fail/1c720907-085a-4f81-96f4-07c23458b0e8
 ###
 
 GET http://localhost:8080/retry/success/9a63a8ba-0e11-4cbe-aef3-621e7ebe3cda
+
+###
+
+GET http://localhost:8080/order/ad89e0f9-5acb-45a6-a992-400ea246513f

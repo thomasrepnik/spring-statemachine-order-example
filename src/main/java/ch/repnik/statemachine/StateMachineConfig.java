@@ -41,7 +41,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<States, Ev
                 .initial(States.CREATED)
                 .stateDo(States.CREATED, transitionService.pack(), errorAction())
                 .stateDo(States.PACKED, transitionService.deliver(), errorAction())
-                .end(States.SHIPPED);
+                .end(States.DELIVERED);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<States, Ev
                 .and()
                 .withExternal()
                 .source(States.PACKED)
-                .target(States.SHIPPED)
+                .target(States.DELIVERED)
                 .event(Events.DELIVER)
                 .action(actionService.deliver(), errorAction());
 
