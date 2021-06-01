@@ -21,7 +21,7 @@ public class TransitionService {
 
             @Override
             public void execute(StateContext<States, Events> context) {
-                System.out.println("Bestellung verpackt!");
+                System.out.println("Bestellung wird verpackt");
                 context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(Events.PACK).build())).subscribe();
             }
         };
@@ -34,7 +34,7 @@ public class TransitionService {
 
             @Override
             public void execute(StateContext<States, Events> context) {
-                System.out.println("Bestellung versendet!");
+                System.out.println("Bestellung wird versendet versendet");
                 context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(Events.DELIVER).build())).subscribe();
             }
         };

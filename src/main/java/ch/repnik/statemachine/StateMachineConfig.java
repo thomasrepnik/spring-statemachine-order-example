@@ -6,6 +6,7 @@ import ch.repnik.statemachine.transitions.TransitionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.*;
@@ -15,6 +16,7 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.persist.StateMachineRuntimePersister;
 import org.springframework.statemachine.service.DefaultStateMachineService;
 import org.springframework.statemachine.service.StateMachineService;
+import reactor.core.publisher.Mono;
 
 import java.util.EnumSet;
 
@@ -41,6 +43,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<States, Ev
                 .initial(States.CREATED)
                 .stateDo(States.CREATED, transitionService.pack(), errorAction())
                 .stateDo(States.PACKED, transitionService.deliver(), errorAction())
+                .state(States.RETRY)
                 .end(States.DELIVERED);
     }
 
@@ -48,16 +51,31 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<States, Ev
     public void configure(StateMachineTransitionConfigurer<States, Events> transitions) throws Exception {
         transitions
                 .withExternal()
-                .source(States.CREATED)
-                .target(States.PACKED)
-                .event(Events.PACK)
-                .action(actionService.pack())
-                .and()
+                    .source(States.CREATED)
+                    .target(States.PACKED)
+                    .event(Events.PACK)
+                    .action(actionService.pack())
+                    .and()
                 .withExternal()
-                .source(States.PACKED)
-                .target(States.DELIVERED)
-                .event(Events.DELIVER)
-                .action(actionService.deliver(), errorAction());
+                    .source(States.PACKED)
+                    .target(States.DELIVERED)
+                    .event(Events.DELIVER)
+                    .action(actionService.deliver(), errorAction())
+                    .and()
+                .withExternal()
+                    .source(States.PACKED)
+                    .target(States.RETRY)
+                    .event(Events.ERROR)
+                    .and()
+                .withInternal()
+                    .source(States.RETRY)
+                    .action(retryAction())
+                    .timer(3000)
+                    .and()
+                .withExternal()
+                    .source(States.RETRY)
+                    .target(States.PACKED)
+                    .event(Events.PACK);
 
     }
 
@@ -78,6 +96,26 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<States, Ev
             @Override
             public void execute(StateContext<States, Events> context) {
                 context.getException().printStackTrace();
+                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(Events.ERROR).build())).subscribe();
+            }
+        };
+    }
+    
+    @Bean
+    public Action<States, Events> retryAction() {
+        return new Action<States, Events>() {
+            @Override
+            public void execute(StateContext<States, Events> context) {
+                final Integer count = context.getExtendedState().get("count", Integer.class);
+                int newCount = (count == null ? 1 : count + 1);
+                context.getExtendedState().getVariables().put("count", newCount);
+                
+                if (count == 3){
+                    //Beim 3. Versuch wird er nicht mehr failen --> Flag wird dafür neu gesetzt
+                    context.getExtendedState().getVariables().put("fail", Boolean.FALSE);
+                }
+                
+                context.getStateMachine().sendEvent(Mono.just(MessageBuilder.withPayload(Events.PACK).build())).subscribe();
             }
         };
     }
